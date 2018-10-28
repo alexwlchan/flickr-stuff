@@ -1,10 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- encoding: utf-8
 
 from flickrapi import FlickrAPI
 from os.path import basename, splitext
 import sys
 import getopt
 from subprocess import call
+
+import json
+import os
 
 usage = """Usage: up2flickr [options] [files]
 
@@ -16,15 +20,19 @@ Upload image files to Flickr. The images will be private to
 friends and family by default."""
 
 # Flickr parameters
-fuser = 'Flickr username'
-key = 'Get key from Flickr'
-secret = 'Get secret from Flickr'
+flickr_api_creds = json.load(open(
+    os.path.join(os.environ["HOME"], ".flickr", "api_credentials.json")
+))
+
+user_id = flickr_api_creds["user_id"]
+api_key = flickr_api_creds["api_key"]
+api_secret = flickr_api_creds["api_secret"]
 
 # Get the command line options.
 try:
   options, filenames = getopt.getopt(sys.argv[1:], 'ph')
-except getopt.GetoptError, err:
-  print str(err)
+except getopt.GetoptError as err:
+  print(str(err))
   sys.exit(2)
 
 # Set the option values.
@@ -33,19 +41,19 @@ for o, a in options:
   if o == '-p':
     public = 1
   else:
-    print usage
+    print(usage)
     sys.exit()
 
 # Upload the files on the command line.
-flickr = FlickrAPI(api_key=key, secret=secret)
+flickr = FlickrAPI(api_key=api_key, secret=api_secret)
 
 for fn in filenames:
-  print "Uploading %s..." % fn
+  print("Uploading %s..." % fn)
   t = splitext(basename(fn))[0]   # file name w/o extension
   response = flickr.upload(filename=fn, title=t,\
             is_public=public, format='etree')
   photoID = response.find('photoid').text
-  photoURL = 'http://www.flickr.com/photos/%s/%s/' % (fuser, photoID)
-  print "  %s" % photoURL
+  photoURL = 'http://www.flickr.com/photos/%s@N03/%s/' % (user_id, photoID)
+  print("  %s" % photoURL)
 
 call(['open', photoURL])
