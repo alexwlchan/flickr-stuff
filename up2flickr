@@ -5,10 +5,10 @@ from flickrapi import FlickrAPI
 from os.path import basename, splitext
 import sys
 import getopt
-from subprocess import call
 
 import json
 import os
+import webbrowser
 
 usage = """Usage: up2flickr [options] [files]
 
@@ -56,4 +56,4 @@ for fn in filenames:
   photoURL = 'http://www.flickr.com/photos/%s@N03/%s/' % (user_id, photoID)
   print("  %s" % photoURL)
 
-call(['open', photoURL])
+webbrowser.open(photoURL)
