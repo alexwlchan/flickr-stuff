@@ -13,16 +13,17 @@ from xml.etree import ElementTree as ET
 usage = """Usage: up2flickr [options] [files]
 
 Options:
-  -p   make the photos public
   -h   show this help message
 
-Upload image files to Flickr. The images will be private to
-friends and family by default."""
+Upload image files to Flickr."""
+
+
+def flickr_dir(name):
+    return os.path.join(os.environ["HOME"], ".flickr", name)
+
 
 # Flickr parameters
-flickr_api_creds = json.load(open(
-    os.path.join(os.environ["HOME"], ".flickr", "api_credentials.json")
-))
+flickr_api_creds = json.load(open(flickr_dir("api_credentials.json")))
 
 user_id = flickr_api_creds["user_id"]
 api_key = flickr_api_creds["api_key"]
@@ -30,19 +31,10 @@ api_secret = flickr_api_creds["api_secret"]
 
 # Get the command line options.
 try:
-  options, filenames = getopt.getopt(sys.argv[1:], 'ph')
+  options, filenames = getopt.getopt(sys.argv[1:], 'h')
 except getopt.GetoptError as err:
   print(str(err))
   sys.exit(2)
-
-# Set the option values.
-public = 0       # default
-for o, a in options:``
-  if o == '-p':
-    public = 1
-  else:
-    print(usage)
-    sys.exit()
 
 # Upload the files on the command line.
 flickr = FlickrAPI(api_key=api_key, secret=api_secret)
@@ -50,10 +42,13 @@ flickr = FlickrAPI(api_key=api_key, secret=api_secret)
 for fn in filenames:
     print("Uploading %s..." % fn)
     title = os.path.splitext(os.path.basename(fn))[0]
+    photo_id = "44879366144"
     response = flickr.upload(
         filename=fn,
         title=title,
-        is_public=public,
+
+        # Make the image private
+        is_public=0,
 
         # Hide from public searches
         hidden=2,
@@ -70,6 +65,19 @@ for fn in filenames:
         license_id="4"
     )
     assert ET.tostring(resp) == b'<rsp stat="ok">\n</rsp>'
+
+    resp = flickr.do_flickr_call(
+        "flickr.photos.getSizes",
+        photo_id=photo_id
+    )
+
+    sizes = [
+        dict(sz.items())
+        for sz in resp.find("sizes").findall("size")
+    ]
+
+    with open(flickr_dir("photo_%s.json" % photo_id), "w") as outfile:
+        outfile.write(json.dumps(sizes))
 
     photoURL = 'http://www.flickr.com/photos/%s@N03/%s/' % (user_id, photo_id)
     print("  %s" % photoURL)
