@@ -76,7 +76,12 @@ for fn in filenames:
         for sz in resp.find("sizes").findall("size")
     ]
 
-    with open(flickr_dir("photo_%s.json" % photo_id), "w") as outfile:
+    out_path = os.path.join(
+        os.environ["HOME"],
+        "repos", "alexwlchan.net", "src", "_flickr", "photo_%s.json" % photo_id
+    )
+
+    with open(out_path, "w") as outfile:
         outfile.write(json.dumps(sizes))
 
     photoURL = 'http://www.flickr.com/photos/%s@N03/%s/' % (user_id, photo_id)
