@@ -2,13 +2,13 @@
 # -*- encoding: utf-8
 
 from flickrapi import FlickrAPI
-from os.path import basename, splitext
 import sys
 import getopt
 
 import json
 import os
 import webbrowser
+from xml.etree import ElementTree as ET
 
 usage = """Usage: up2flickr [options] [files]
 
@@ -37,7 +37,7 @@ except getopt.GetoptError as err:
 
 # Set the option values.
 public = 0       # default
-for o, a in options:
+for o, a in options:``
   if o == '-p':
     public = 1
   else:
@@ -48,12 +48,30 @@ for o, a in options:
 flickr = FlickrAPI(api_key=api_key, secret=api_secret)
 
 for fn in filenames:
-  print("Uploading %s..." % fn)
-  t = splitext(basename(fn))[0]   # file name w/o extension
-  response = flickr.upload(filename=fn, title=t,\
-            is_public=public, format='etree')
-  photoID = response.find('photoid').text
-  photoURL = 'http://www.flickr.com/photos/%s@N03/%s/' % (user_id, photoID)
-  print("  %s" % photoURL)
+    print("Uploading %s..." % fn)
+    title = os.path.splitext(os.path.basename(fn))[0]
+    response = flickr.upload(
+        filename=fn,
+        title=title,
+        is_public=public,
+
+        # Hide from public searches
+        hidden=2,
+
+        format='etree'
+    )
+
+    photo_id = response.find('photoid').text
+
+    # Set the licence as CC-BY.
+    resp = flickr.do_flickr_call(
+        "flickr.photos.licenses.setLicense",
+        photo_id=photo_id,
+        license_id="4"
+    )
+    assert ET.tostring(resp) == b'<rsp stat="ok">\n</rsp>'
+
+    photoURL = 'http://www.flickr.com/photos/%s@N03/%s/' % (user_id, photo_id)
+    print("  %s" % photoURL)
 
 webbrowser.open(photoURL)
